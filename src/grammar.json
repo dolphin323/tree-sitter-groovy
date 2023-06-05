@@ -260,6 +260,10 @@
                 {
                   "type": "PATTERN",
                   "value": "\\\\(.|\\n)"
+                },
+                {
+                  "type": "PATTERN",
+                  "value": "\\$\\{[^}]*\\}"
                 }
               ]
             }
@@ -2196,8 +2200,8 @@
           "name": "ternary_variants"
         },
         {
-          "type": "STRING",
-          "value": "as"
+          "type": "SYMBOL",
+          "name": "as"
         },
         {
           "type": "SYMBOL",
@@ -2228,6 +2232,14 @@
     "def": {
       "type": "PATTERN",
       "value": "[dD][eE][fF]"
+    },
+    "var": {
+      "type": "PATTERN",
+      "value": "[vV][aA][rR]"
+    },
+    "as": {
+      "type": "PATTERN",
+      "value": "[aA][sS]"
     },
     "identifier": {
       "type": "PATTERN",
@@ -2321,6 +2333,9 @@
     ],
     [
       "block_expression",
+      "parentless_function_call"
+    ],
+    [
       "parentless_function_call"
     ]
   ],

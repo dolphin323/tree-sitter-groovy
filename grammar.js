@@ -1,4 +1,4 @@
-commands = ["if", "else", "import", "return", "def", "as"];
+commands = ["if", "else", "import", "return", "def", "var", "as"];
 
 const PREC = {
   // https://introcs.cs.princeton.edu/java/11precedence/
@@ -59,7 +59,7 @@ const BINARY_EXPRESSION_OPERATORS = [
   [">>>", PREC.SHIFT],
 ];
 
-const ASSIGNMENT_EXPRESSION = [
+const ASSIGNMENT_OPERATOR = [
   "=",
   "+=",
   "-=",
@@ -103,6 +103,7 @@ module.exports = grammar({
     [$.arguments],
     [$.parentless_function_call, $.variable_definition],
     [$.block_expression, $.parentless_function_call],
+    [$.parentless_function_call],
   ],
 
   rules: {
@@ -111,6 +112,7 @@ module.exports = grammar({
     _statement: ($) =>
       seq(
         choice(
+          // everything here must be either statement or definition or call
           $.import_statement,
           $.if_statement,
           $.assignment_expression,
@@ -119,11 +121,11 @@ module.exports = grammar({
           $.function_call,
           $.function_expression,
           $.function_definition,
-          $.spread_expression,
+          $.spread_expression, // spread_operation, see if you can move it to arguments
           $.return_statement,
-          $.throw_error_expression,
+          $.throw_error_expression, // statement
           $.variable_definition,
-          $.parentless_function_call
+          $.parentless_function_call // merge
         ),
         optional($.end_of_line)
       ),
@@ -162,7 +164,9 @@ module.exports = grammar({
       token(seq("'", repeat(choice(/[^\\'\n]/, /\\(.|\n)/)), "'")),
 
     double_quoted_string: ($) =>
-      token(seq('"', repeat(choice(/[^\\"\n]/, /\\(.|\n)/)), '"')),
+      token(
+        seq('"', repeat(choice(/[^\\"\n]/, /\\(.|\n)/, /\$\{[^}]*\}/)), '"')
+      ),
 
     text_block: ($) =>
       token(
@@ -182,6 +186,7 @@ module.exports = grammar({
 
     property_access: ($) => seq($.identifier, "[", $.body, "]"),
 
+    //call it CHAIN
     field_access: ($) =>
       seq(
         choice($.identifier, $.function_call),
@@ -260,10 +265,20 @@ module.exports = grammar({
       seq(optional($.def), choice($.identifier, $.field_access)),
 
     assignment_expression: ($) =>
-      seq($.variable_definition, choice(...ASSIGNMENT_EXPRESSION), $.assignee),
+      seq($.variable_definition, choice(...ASSIGNMENT_OPERATOR), $.assignee),
     // assigned_to: ($) =>
     //   seq(optional($.def), choice($.identifier, $.field_access)),
     assignee: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
+
+    // REFACTORED BUR PRODUCES ERRORS
+    // variable_definition: ($) =>
+    //   seq(choice($.def, $.var, $.type), choice($.identifier, $.field_access)),
+
+    // assignment_expression: ($) =>
+    //   seq($.assignee, choice(...ASSIGNMENT_OPERATOR), $.assigned),
+    // assignee: ($) =>
+    //   choice($.variable_definition, $.identifier, $.field_access),
+    // assigned: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
 
     unary_expression: ($) =>
       choice(

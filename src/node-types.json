@@ -106,6 +106,10 @@
       "required": true,
       "types": [
         {
+          "type": "as",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1230,7 +1234,7 @@
   },
   {
     "type": "as",
-    "named": false
+    "named": true
   },
   {
     "type": "def",
