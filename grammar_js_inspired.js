@@ -11,6 +11,9 @@ keywords = [
   "def",
   "var",
   "task",
+  "true",
+  "false",
+  "null",
 ];
 
 types = ["String", "Integer", "Boolean", "Object"];
@@ -91,6 +94,7 @@ const ASSIGNMENT_EXPRESSION = [
 ];
 
 const PRECEDENCES = [
+  "member",
   "unary_void",
   "binary_exp",
   "binary_times",
@@ -113,73 +117,90 @@ module.exports = grammar({
 
   precedences: ($) => [PRECEDENCES],
 
-  conflicts: ($) => [
-    [$.comma_sep_args],
-    [$.arguments],
-    [$.parentless_function_call, $.variable_definition],
-    [$.block_expression, $.parentless_function_call],
-  ],
+  conflicts: ($) => [],
 
   rules: {
     module: ($) => repeat($._statement),
 
-    _statement: ($) =>
-      seq(
-        choice(
-          $.import_statement,
-          $.if_statement,
-          $.assignment_expression,
-          $.block_expression,
-          $.task_definition,
-          $.function_call,
-          $.function_expression,
-          $.function_definition,
-          $.spread_expression,
-          $.return_statement,
-          $.throw_error_expression,
-          $.variable_definition,
-          $.parentless_function_call
-        ),
-        optional($.end_of_line)
-      ),
+    // AS IT IS DONE IN JS grammar
+    // _statement: ($) =>
+    //   choice(
+    //     $.import_statement,
+    //     $.expression,
+    //     $.declaration,
+    //     $.if_statement,
+    //     $.return_statement,
+    //     $.throw_statement
+    //   ),
 
-    _arguments: ($) =>
-      seq(
-        choice(
-          $.identifier,
-          $.field_access,
-          $.string,
-          $.function_call,
-          $.array,
-          $.method_definition,
-          $.new_expression,
-          $.number,
-          $.unary_expression,
-          $.binary_expression,
-          $.spread_expression,
-          $.ternary_expression,
-          $.elvis_expression,
-          $.closure,
-          $.closure_call,
-          $.text_block,
-          $.property_access,
-          $.as_expression
-        )
-      ),
+    // declaration: ($) => choice($.function_declaration, $.variable_declaration),
 
-    arguments: ($) => choice($._arguments, seq("(", $._arguments, ")")),
+    // expression: ($) =>
+    //   choice(
+    //     $.primary_expression,
+    //     $.assignment_expression,
+    //     $.function_call,
+    //     $.unary_expression,
+    //     $.binary_expression,
+    //     $.ternary_expression,
+    //     $.new_expression,
+    //     $.closure,
+    //     $.block_expression
+    //   ),
+
+    // primary_expression: ($) =>
+    //   choice(
+    //     $.subscript_expression,
+    //     $.member_expression,
+    //     $.parenthesized_expression,
+    //     $.identifier,
+    //     $.number,
+    //     $.string,
+    //     $.true,
+    //     $.false,
+    //     $.null,
+    //     $.import,
+    //     $.array,
+    //     $.function_call
+    //   ),
+
+    // parenthesized_expression: ($) => seq("(", $.expression, ")"),
+
+    // optional_chain: ($) => "?.",
+
+    // member_expression: ($) =>
+    //   prec(
+    //     "member",
+    //     seq(
+    //       field("object", choice($.expression, $.primary_expression)),
+    //       choice(".", field("optional_chain", $.optional_chain)),
+    //       field("property", choice(alias($.identifier, $.property_identifier)))
+    //     )
+    //   ),
+    // subscript_expression: ($) =>
+    //   prec.right(
+    //     "member",
+    //     seq(
+    //       field("object", choice($.expression, $.primary_expression)),
+    //       optional(field("optional_chain", $.optional_chain)),
+    //       "[",
+    //       field("index", $.expression),
+    //       "]"
+    //     )
+    //   ),
+
+    // arguments: ($) => seq("(", commaSep(optional(choice($.expression))), ")"),
 
     end_of_line: ($) => ";",
 
-    string: ($) => choice($.single_quoted_string, $.double_quoted_string),
-
+    string: ($) =>
+      choice($.single_quoted_string, $.double_quoted_string, $.text_block),
     single_quoted_string: ($) =>
       token(seq("'", repeat(choice(/[^\\'\n]/, /\\(.|\n)/)), "'")),
     double_quoted_string: ($) =>
       token(
         seq('"', repeat(choice(/[^\\"\n]/, /\\(.|\n)/, /\$\{[^}]*\}/)), '"')
       ),
-
     text_block: ($) =>
       token(
         seq("'''", /\s*\n/, optional(repeat(choice(/[^\\"]/, /\\(.)/))), "'''")
@@ -203,20 +224,21 @@ module.exports = grammar({
         choice($.identifier, $.function_call),
         repeat1(
           seq(
-            choice(".", "?.", ".&", "*."),
+            choice(".", "?."),
             choice(
               $.identifier,
               $.function_call,
               $.string,
-              seq($.identifier, "[", $.body, "]"),
-              $.closure_call
+              seq($.identifier, "[", $.body, "]")
             )
           )
         )
       ),
 
+    chain: ($) => seq(repeat1(seq($.identifier, ".")), $.identifier), // only used in import_statement
+
     import_statement: ($) =>
-      seq($.import, choice($.identifier, $.field_access), optional(".*")),
+      seq($.import, choice($.identifier, $.chain), optional(".*")),
 
     comma_sep_args: ($) => seq(commaSep($.arguments), optional(",")),
 
@@ -235,7 +257,7 @@ module.exports = grammar({
         )
       ),
     else_if_clause: ($) =>
-      seq($.else_if, $.condition, "{", optional($.body), "}"),
+      seq("else if", $.condition, "{", optional($.body), "}"),
     else_clause: ($) => seq($.else, "{", optional($.body), "}"),
     if_statement: ($) =>
       seq($.if_clause, repeat($.else_if_clause), optional($.else_clause)),
@@ -249,34 +271,50 @@ module.exports = grammar({
             seq("->")
           )
         ),
-        choice($.body, $.string, $.elvis_expression),
+        choice(repeat1($._statement), $.string, $.elvis_expression), //
         "}"
       ),
-    closure_call: ($) => seq(choice($.identifier, $.function_call), $.closure),
 
-    function_call: ($) =>
-      seq($.identifier, "(", optional($.comma_sep_args), ")"),
-    parentless_function_call: ($) =>
-      seq($.identifier, optional($.comma_sep_args)),
-    function_expression: ($) =>
-      seq($.function_call, optional("<<"), "{", optional($.body), "}"),
-    function_definition: ($) =>
-      seq(optional("static"), $.def, $.function_expression),
+    function_call: (
+      $ // CLEARED for now
+    ) =>
+      seq(
+        $.identifier,
+        choice(
+          seq("(", optional($.comma_sep_args), ")"),
+          $.comma_sep_args,
+          seq("(", optional($.comma_sep_args), ")", $.closure) // for closure as the last argument
+        )
+      ),
+
+    function_declaration: ($) =>
+      seq(
+        optional("static"),
+        $.def,
+        $.identifier,
+        "(",
+        optional($.comma_sep_args),
+        ")",
+        "{",
+        $.body,
+        "}"
+      ),
 
     task_definition: ($) =>
-      seq($.task, choice($.block_expression, $.function_expression)),
+      seq($.task, choice($.block_expression, $.function_call)),
 
     new_expression: ($) => seq($.new, choice($.function_call, $.field_access)),
 
-    throw_error_expression: ($) => seq($.throw, $.new_expression),
+    throw_statement: ($) => seq($.throw, $.new_expression),
 
     type: ($) => choice("String", "Integer", "Boolean", "Object"),
 
-    variable_definition: ($) =>
-      seq(optional($.def), choice($.identifier, $.field_access)),
+    variable_declaration: (
+      $ // CLEARED
+    ) => seq(choice($.def, $.var, $.type), $.identifier),
 
     assignment_expression: ($) =>
-      seq($.variable_definition, choice(...ASSIGNMENT_EXPRESSION), $.assignee),
+      seq($.variable_declaration, choice(...ASSIGNMENT_EXPRESSION), $.assignee),
     // assigned_to: ($) =>
     //   seq(optional($.def), choice($.identifier, $.field_access)),
     assignee: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
@@ -338,7 +376,7 @@ module.exports = grammar({
     spread_expression: ($) => seq($.type, "...", $.identifier),
 
     block_expression: ($) =>
-      prec(1, seq($.identifier, "{", optional($.body), "}")),
+      prec.right(seq($.identifier, "{", repeat($._statement), "}")),
 
     method_definition: ($) =>
       seq(choice($.identifier, $.string), ":", choice($.arguments)),
@@ -365,8 +403,7 @@ function commaSep(rule) {
 function iregex(s) {
   return new RegExp(
     Array.from(s).reduce(
-      (acc, value) => acc + `[${value.toLowerCase()}${value.toUpperCase()}]`,
-      ""
+      (acc, value) => acc + `[${value.toLowerCase()}${value.toUpperCase()}]`
     )
   );
 }
