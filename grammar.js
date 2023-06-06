@@ -1,4 +1,19 @@
-commands = ["if", "else", "import", "return", "def", "as"];
+keywords = [
+  "if",
+  "else if",
+  "else",
+  "import",
+  "as",
+  "return",
+  "throw",
+  "new",
+  "static",
+  "def",
+  "var",
+  "task",
+];
+
+types = ["String", "Integer", "Boolean", "Object"];
 
 const PREC = {
   // https://introcs.cs.princeton.edu/java/11precedence/
@@ -27,7 +42,7 @@ const PREC = {
   CLASS_LITERAL: 17, // .
 };
 
-const UNARY_EXPRESSION_OPERATORS = [
+const UNARY_OPERATORS = [
   ["+", PREC.UNARY],
   ["-", PREC.UNARY],
   ["!", PREC.UNARY],
@@ -35,13 +50,13 @@ const UNARY_EXPRESSION_OPERATORS = [
   ["*", PREC.UNARY],
 ];
 
-const BINARY_EXPRESSION_OPERATORS = [
+const BINARY_OPERATORS = [
   [">", PREC.REL],
   ["<", PREC.REL],
   [">=", PREC.REL],
   ["<=", PREC.REL],
   ["=~", PREC.REL],
-  ["->", PREC.REL], // TODO CHECK THE
+  ["->", PREC.REL], // TODO: CHECK THE
   ["==", PREC.EQUALITY],
   ["!=", PREC.EQUALITY],
   ["&&", PREC.AND],
@@ -59,7 +74,7 @@ const BINARY_EXPRESSION_OPERATORS = [
   [">>>", PREC.SHIFT],
 ];
 
-const ASSIGNMENT_EXPRESSION = [
+const ASSIGNMENT_OPERATORS = [
   "=",
   "+=",
   "-=",
@@ -94,39 +109,24 @@ const PRECEDENCES = [
 
 module.exports = grammar({
   name: "groovy",
-  extras: ($) => [$.shebang_line, $.line_comment, $.multiline_comment, /\s/],
+  extras: ($) => [$.shebang_line, $.line_comment, $.multiline_comment, /\s/], // I think it's
 
-  precedences: ($) => [PRECEDENCES],
+  precedences: ($) => [PRECEDENCES], // Can only be used with parse precedence, not lexical precedence.
 
   conflicts: ($) => [
-    [$.comma_sep_args],
-    [$.arguments],
+    [$.comma_sep_args], // what does this single-element arrag specify?
+    [$.arguments], // what does this single-element arrag specify?
     [$.parentless_function_call, $.variable_definition],
     [$.block_expression, $.parentless_function_call],
   ],
 
   rules: {
+    /* 
+    Generally, the order of the rules is used to resolve conflicts.
+    Define more rigid structures first. 
+    Example: if_statements are more unforgiving... 
+    */
     module: ($) => repeat($._statement),
-
-    _statement: ($) =>
-      seq(
-        choice(
-          $.import_statement,
-          $.if_statement,
-          $.assignment_expression,
-          $.block_expression,
-          $.task_definition,
-          $.function_call,
-          $.function_expression,
-          $.function_definition,
-          $.spread_expression,
-          $.return_statement,
-          $.throw_error_expression,
-          $.variable_definition,
-          $.parentless_function_call
-        ),
-        optional($.end_of_line)
-      ),
 
     _arguments: ($) =>
       seq(
@@ -153,8 +153,6 @@ module.exports = grammar({
       ),
 
     arguments: ($) => choice($._arguments, seq("(", $._arguments, ")")),
-
-    end_of_line: ($) => ";",
 
     string: ($) => choice($.single_quoted_string, $.double_quoted_string),
 
@@ -199,9 +197,6 @@ module.exports = grammar({
         )
       ),
 
-    import_statement: ($) =>
-      seq($.import, choice($.identifier, $.field_access), optional(".*")),
-
     comma_sep_args: ($) => seq(commaSep($.arguments), optional(",")),
 
     condition: ($) => seq("(", choice($.arguments), ")"),
@@ -214,7 +209,7 @@ module.exports = grammar({
         choice(
           seq("{", optional($.body), "}"),
           $.return_statement,
-          $.assignment_expression,
+          $.assignment_statement,
           $.field_access
         )
       ),
@@ -245,29 +240,29 @@ module.exports = grammar({
     function_expression: ($) =>
       seq($.function_call, optional("<<"), "{", optional($.body), "}"),
     function_definition: ($) =>
-      seq(optional("static"), $.def, $.function_expression),
+      seq(optional($.static), $.def, $.function_expression),
 
     task_definition: ($) =>
-      seq("task", choice($.block_expression, $.function_expression)),
+      seq($.task, choice($.block_expression, $.function_expression)),
 
-    new_expression: ($) => seq("new", choice($.function_call, $.field_access)),
+    new_expression: ($) => seq($.new, choice($.function_call, $.field_access)),
 
-    throw_error_expression: ($) => seq("throw", $.new_expression),
+    throw_statement: ($) => seq($.throw, $.new_expression),
 
-    type: ($) => choice("String", "Integer", "Boolean", "Object"),
+    type: ($) => choice($.String, $.Integer, $.Boolean, $.Object),
 
     variable_definition: ($) =>
       seq(optional($.def), choice($.identifier, $.field_access)),
 
-    assignment_expression: ($) =>
-      seq($.variable_definition, choice(...ASSIGNMENT_EXPRESSION), $.assignee),
+    assignment_statement: ($) =>
+      seq($.variable_definition, choice(...ASSIGNMENT_OPERATORS), $.assignee),
     // assigned_to: ($) =>
     //   seq(optional($.def), choice($.identifier, $.field_access)),
     assignee: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
 
     unary_expression: ($) =>
       choice(
-        ...UNARY_EXPRESSION_OPERATORS.map(([operator, precedence]) =>
+        ...UNARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
             seq(field("operator", operator), field("operand", $.arguments))
@@ -277,7 +272,7 @@ module.exports = grammar({
 
     binary_expression: ($) =>
       choice(
-        ...BINARY_EXPRESSION_OPERATORS.map(([operator, precedence]) =>
+        ...BINARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
             seq(
@@ -331,14 +326,45 @@ module.exports = grammar({
 
     as_expression: ($) => seq($.ternary_variants, $.as, $.identifier),
 
-    else_if: ($) => "else if",
-    ...commandNames(...commands),
+    _definition: ($) =>
+      choice($.function_definition, $.task_definition, $.variable_definition),
+
+    import_statement: ($) =>
+      seq($.import, choice($.identifier, $.field_access), optional(".*")),
+
+    _invocation: ($) =>
+      choice(
+        $.import_statement,
+        $.function_call,
+        $.return_statement,
+        $.throw_statement,
+        $.assignment_statement
+      ),
+
+    _statement: ($) =>
+      seq(
+        choice(
+          $.if_statement,
+          // $.while_statement,
+          $._invocation,
+          $._definition,
+          $.block_expression, // What is this?
+          $.function_expression, // What is this?
+          $.spread_expression, // Isn't this an argument-level thing?
+          $.parentless_function_call // HUH? O_o
+        ),
+        // optional($.end_of_line)
+        optional(";")
+      ),
+
+    ...ruleNames(...keywords),
+    ...ruleNames(...types),
 
     identifier: (_) => /[A-Za-z_][A-Za-z0-9_]*/,
-
     shebang_line: ($) => token(seq(/#!.*/)),
     line_comment: (_) => token(seq("//", optional(/[^\n]+/g))),
     multiline_comment: (_) => token(seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")),
+    // end_of_line: ($) => ";",
   },
 });
 
@@ -349,16 +375,15 @@ function commaSep(rule) {
 function iregex(s) {
   return new RegExp(
     Array.from(s).reduce(
-      (acc, value) => acc + `[${value.toLowerCase()}${value.toUpperCase()}]`,
-      ""
+      (acc, value) => acc + `[${value.toLowerCase()}${value.toUpperCase()}]`
     )
   );
 }
 
-function commandName(name) {
-  return { [name]: (_) => iregex(name) };
+function ruleName(name) {
+  return { [name.replaceAll(/ /g, "_")]: (_) => iregex(name) };
 }
 
-function commandNames(...names) {
-  return Object.assign({}, ...names.map(commandName));
+function ruleNames(...names) {
+  return Object.assign({}, ...names.map(ruleName));
 }

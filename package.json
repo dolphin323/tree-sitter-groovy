@@ -1,10 +1,10 @@
 {
   "name": "tree-sitter-groovy",
   "version": "1.0.0",
-  "description": "",
   "main": "bindings/node",
   "scripts": {
-    "generate": "tree-sitter generate"
+    "generate": "tree-sitter generate",
+    "install": "node-gyp rebuild"
   },
   "author": "",
   "license": "ISC",
@@ -13,5 +13,7 @@
   },
   "devDependencies": {
     "tree-sitter-cli": "^0.20.8"
-  }
+  },
+  "gypfile": true,
+  "description": ""
 }

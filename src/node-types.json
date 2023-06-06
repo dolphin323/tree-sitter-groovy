@@ -106,6 +106,10 @@
       "required": true,
       "types": [
         {
+          "type": "as",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -132,7 +136,7 @@
     }
   },
   {
-    "type": "assignment_expression",
+    "type": "assignment_statement",
     "named": true,
     "fields": {},
     "children": {
@@ -294,15 +298,11 @@
       "required": true,
       "types": [
         {
-          "type": "assignment_expression",
+          "type": "assignment_statement",
           "named": true
         },
         {
           "type": "block_expression",
-          "named": true
-        },
-        {
-          "type": "end_of_line",
           "named": true
         },
         {
@@ -342,7 +342,7 @@
           "named": true
         },
         {
-          "type": "throw_error_expression",
+          "type": "throw_statement",
           "named": true
         },
         {
@@ -562,6 +562,10 @@
         {
           "type": "function_expression",
           "named": true
+        },
+        {
+          "type": "static",
+          "named": true
         }
       ]
     }
@@ -594,7 +598,7 @@
       "required": true,
       "types": [
         {
-          "type": "assignment_expression",
+          "type": "assignment_statement",
           "named": true
         },
         {
@@ -698,15 +702,11 @@
       "required": false,
       "types": [
         {
-          "type": "assignment_expression",
+          "type": "assignment_statement",
           "named": true
         },
         {
           "type": "block_expression",
-          "named": true
-        },
-        {
-          "type": "end_of_line",
           "named": true
         },
         {
@@ -746,7 +746,7 @@
           "named": true
         },
         {
-          "type": "throw_error_expression",
+          "type": "throw_statement",
           "named": true
         },
         {
@@ -761,7 +761,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -770,6 +770,10 @@
         },
         {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "new",
           "named": true
         }
       ]
@@ -875,7 +879,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -884,6 +888,10 @@
         },
         {
           "type": "function_expression",
+          "named": true
+        },
+        {
+          "type": "task",
           "named": true
         }
       ]
@@ -948,15 +956,19 @@
     }
   },
   {
-    "type": "throw_error_expression",
+    "type": "throw_statement",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "new_expression",
+          "named": true
+        },
+        {
+          "type": "throw",
           "named": true
         }
       ]
@@ -965,7 +977,29 @@
   {
     "type": "type",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "Boolean",
+          "named": true
+        },
+        {
+          "type": "Integer",
+          "named": true
+        },
+        {
+          "type": "Object",
+          "named": true
+        },
+        {
+          "type": "String",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "unary_expression",
@@ -1125,6 +1159,10 @@
     "named": false
   },
   {
+    "type": ";",
+    "named": false
+  },
+  {
     "type": "<",
     "named": false
   },
@@ -1194,19 +1232,19 @@
   },
   {
     "type": "Boolean",
-    "named": false
+    "named": true
   },
   {
     "type": "Integer",
-    "named": false
+    "named": true
   },
   {
     "type": "Object",
-    "named": false
+    "named": true
   },
   {
     "type": "String",
-    "named": false
+    "named": true
   },
   {
     "type": "[",
@@ -1230,7 +1268,7 @@
   },
   {
     "type": "as",
-    "named": false
+    "named": true
   },
   {
     "type": "def",
@@ -1246,10 +1284,6 @@
   },
   {
     "type": "else_if",
-    "named": true
-  },
-  {
-    "type": "end_of_line",
     "named": true
   },
   {
@@ -1274,7 +1308,7 @@
   },
   {
     "type": "new",
-    "named": false
+    "named": true
   },
   {
     "type": "number",
@@ -1294,11 +1328,11 @@
   },
   {
     "type": "static",
-    "named": false
+    "named": true
   },
   {
     "type": "task",
-    "named": false
+    "named": true
   },
   {
     "type": "text_block",
@@ -1306,7 +1340,7 @@
   },
   {
     "type": "throw",
-    "named": false
+    "named": true
   },
   {
     "type": "{",
