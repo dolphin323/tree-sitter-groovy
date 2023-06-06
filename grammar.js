@@ -115,9 +115,7 @@ module.exports = grammar({
 
   conflicts: ($) => [
     [$.comma_sep_args], // what does this single-element arrag specify?
-    [$.arguments], // what does this single-element arrag specify?
-    [$.parentless_function_call, $.variable_definition],
-    [$.block_expression, $.parentless_function_call],
+    [$.argument], // what does this single-element arrag specify?
   ],
 
   rules: {
@@ -125,47 +123,53 @@ module.exports = grammar({
     Generally, the order of the rules is used to resolve conflicts.
     Define more rigid structures first. 
     Example: if_statements are more unforgiving... 
+    TODO:
+      1. rename field_access to chain and simplify
+      2. clear up function related rules (only call and definition must exist)
     */
     module: ($) => repeat($._statement),
 
-    _arguments: ($) =>
-      seq(
-        choice(
-          $.identifier,
-          $.field_access,
-          $.string,
-          $.function_call,
-          $.array,
-          $.method_definition,
-          $.new_expression,
-          $.number,
-          $.unary_expression,
-          $.binary_expression,
-          $.spread_expression,
-          $.ternary_expression,
-          $.elvis_expression,
-          $.closure,
-          $.closure_call,
-          $.text_block,
-          $.property_access,
-          $.as_expression
-        )
+    chain: ($) => seq(repeat1(seq($.identifier, ".")), $.identifier), // only used in import_statement
+
+    import_statement: ($) =>
+      seq($.import, choice($.identifier, $.chain), optional(".*")),
+
+    argument: (
+      $ // This should mean a single value, through any means (variable, field_access, expressions, anything that returns a value)
+    ) =>
+      choice(
+        $.identifier,
+        // $.field_access, // a.b.d.c((1,2,4)).
+        // $.function_call,
+        $.string,
+        $.array,
+        $.number
+        // $.closure,
+        // $.unary_expression,
+        // $.binary_expression,
+        // $.spread_expression,
+        // $.ternary_expression,
+        // $.elvis_expression,
+        // $.closure,
+        // $.closure_call,
+        // $.property_access,
+        // $.as_expression
+        // $.method_definition,
+        // $.new_expression,
       ),
 
-    arguments: ($) => choice($._arguments, seq("(", $._arguments, ")")),
-
-    string: ($) => choice($.single_quoted_string, $.double_quoted_string),
+    // argument: ($) => choice($._argument, $._parenthesized_argument),
 
     single_quoted_string: ($) =>
       token(seq("'", repeat(choice(/[^\\'\n]/, /\\(.|\n)/)), "'")),
-
     double_quoted_string: ($) =>
       token(seq('"', repeat(choice(/[^\\"\n]/, /\\(.|\n)/)), '"')),
-
     text_block: ($) =>
       token(
         seq("'''", /\s*\n/, optional(repeat(choice(/[^\\"]/, /\\(.)/))), "'''")
       ),
+    string: ($) =>
+      choice($.single_quoted_string, $.double_quoted_string, $.text_block),
 
     array: ($) =>
       choice(seq("[", optional($.comma_sep_args), optional(","), "]"), "[:]"),
@@ -197,27 +201,7 @@ module.exports = grammar({
         )
       ),
 
-    comma_sep_args: ($) => seq(commaSep($.arguments), optional(",")),
-
-    condition: ($) => seq("(", choice($.arguments), ")"),
-    body: ($) => repeat1($._statement),
-
-    if_clause: ($) =>
-      seq(
-        $.if,
-        $.condition,
-        choice(
-          seq("{", optional($.body), "}"),
-          $.return_statement,
-          $.assignment_statement,
-          $.field_access
-        )
-      ),
-    else_if_clause: ($) =>
-      seq($.else_if, $.condition, "{", optional($.body), "}"),
-    else_clause: ($) => seq($.else, "{", optional($.body), "}"),
-    if_statement: ($) =>
-      seq($.if_clause, repeat($.else_if_clause), optional($.else_clause)),
+    comma_sep_args: ($) => seq(commaSep($.argument), optional(",")),
 
     closure: ($) =>
       seq(
@@ -233,39 +217,52 @@ module.exports = grammar({
       ),
     closure_call: ($) => seq(choice($.identifier, $.function_call), $.closure),
 
-    function_call: ($) =>
-      seq($.identifier, "(", optional($.comma_sep_args), ")"),
-    parentless_function_call: ($) =>
-      seq($.identifier, optional($.comma_sep_args)),
     function_expression: ($) =>
       seq($.function_call, optional("<<"), "{", optional($.body), "}"),
     function_definition: ($) =>
       seq(optional($.static), $.def, $.function_expression),
 
     task_definition: ($) =>
-      seq($.task, choice($.block_expression, $.function_expression)),
+      seq($.task, choice($.block_operations, $.function_expression)),
 
     new_expression: ($) => seq($.new, choice($.function_call, $.field_access)),
 
     throw_statement: ($) => seq($.throw, $.new_expression),
 
-    type: ($) => choice($.String, $.Integer, $.Boolean, $.Object),
+    type: ($) => choice($.String, $.Integer, $.Boolean, $.Object), // CLEAERED
 
-    variable_definition: ($) =>
-      seq(optional($.def), choice($.identifier, $.field_access)),
+    function_call: (
+      $ // CLEARED for now
+    ) =>
+      seq(
+        $.identifier,
+        choice(
+          seq("(", optional($.comma_sep_args), ")"),
+          $.comma_sep_args,
+          seq("(", optional($.comma_sep_args), ")", $.argument)
+        )
+      ),
 
-    assignment_statement: ($) =>
-      seq($.variable_definition, choice(...ASSIGNMENT_OPERATORS), $.assignee),
-    // assigned_to: ($) =>
-    //   seq(optional($.def), choice($.identifier, $.field_access)),
-    assignee: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
+    variable_definition: (
+      $ // CLEARED
+    ) => seq(choice($.def, $.var, $.type), $.identifier),
+
+    assignment_statement: (
+      $ // TODO: multiple assignments at a time
+    ) =>
+      seq(
+        choice($.variable_definition, $.identifier, $.field_access),
+        choice(...ASSIGNMENT_OPERATORS),
+        $.assignee
+      ),
+    assignee: ($) => choice(seq("(", $.expression, ")"), $.argument),
 
     unary_expression: ($) =>
       choice(
         ...UNARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
-            seq(field("operator", operator), field("operand", $.arguments))
+            seq(field("operator", operator), field("operand", $.argument))
           )
         )
       ),
@@ -276,9 +273,9 @@ module.exports = grammar({
           prec.left(
             precedence,
             seq(
-              field("left", $.arguments),
+              field("left", $.argument),
               field("operator", operator),
-              field("right", $.arguments)
+              field("right", $.argument)
             )
           )
         )
@@ -316,26 +313,50 @@ module.exports = grammar({
 
     spread_expression: ($) => seq($.type, "...", $.identifier),
 
-    block_expression: ($) =>
+    block_operations: ($) =>
       prec(1, seq($.identifier, "{", optional($.body), "}")),
 
     method_definition: ($) =>
-      seq(choice($.identifier, $.string), ":", choice($.arguments)),
+      seq(choice($.identifier, $.string), ":", choice($.argument)),
 
-    return_statement: ($) => prec.right(seq($.return, optional($.arguments))),
+    return_statement: ($) => prec.right(seq($.return, optional($.argument))),
 
     as_expression: ($) => seq($.ternary_variants, $.as, $.identifier),
 
+    _parenthesized_expression: ($) => seq("(", $.expression, ")"),
+    expression: ($) =>
+      choice(
+        $.argument,
+        $.unary_expression,
+        $.binary_expression,
+        $.ternary_expression,
+        $._parenthesized_expression
+      ),
+
+    condition: ($) => seq("(", choice($.expression), ")"), // TODO: operators?
+    body: ($) => repeat1($._statement),
+
+    if_clause: ($) =>
+      seq($.if, $.condition, choice(seq("{", optional($.body), "}"), $.body)),
+    else_if_clause: ($) =>
+      seq(
+        $.else_if,
+        $.condition,
+        choice(seq("{", optional($.body), "}"), $.body)
+      ),
+    else_clause: ($) =>
+      seq($.else, choice(seq("{", optional($.body), "}"), $.body)),
+    if_statement: ($) =>
+      seq($.if_clause, repeat($.else_if_clause), optional($.else_clause)),
+
     _definition: ($) =>
       choice($.function_definition, $.task_definition, $.variable_definition),
-
-    import_statement: ($) =>
-      seq($.import, choice($.identifier, $.field_access), optional(".*")),
 
     _invocation: ($) =>
       choice(
         $.import_statement,
         $.function_call,
+        $.block_operations,
         $.return_statement,
         $.throw_statement,
         $.assignment_statement
@@ -348,10 +369,8 @@ module.exports = grammar({
           // $.while_statement,
           $._invocation,
           $._definition,
-          $.block_expression, // What is this?
-          $.function_expression, // What is this?
-          $.spread_expression, // Isn't this an argument-level thing?
-          $.parentless_function_call // HUH? O_o
+          $.function_expression, // TODO: Merge this rule into function call, see here: https://groovy-lang.org/style-guide.html#_omitting_parentheses
+          $.spread_expression // Isn't this an argument-level thing?
         ),
         // optional($.end_of_line)
         optional(";")
