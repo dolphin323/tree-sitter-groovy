@@ -155,7 +155,7 @@ module.exports = grammar({
         // $.binary_expression,
         // $.spread_expression,
         // $.ternary_expression,
-        // $.elvis_expression, // x ? x : y => x ?: y ::: either binary or ternery
+        // $.elvis_expression, // x ? x : y => x ?: y ::: either binary or ternary
         // $.closure,
         // $.property_access,
         // $.as_expression
@@ -242,17 +242,15 @@ module.exports = grammar({
 
     type: ($) => choice($.String, $.Integer, $.Boolean, $.Object), // CLEAERED
 
+    function_arguments: ($) =>
+      choice(
+        seq("(", optional($.comma_sep_args), ")"),
+        $.comma_sep_args,
+        seq("(", optional($.comma_sep_args), ")", $.argument) // for closure as the last argument
+      ),
     function_call: (
       $ // CLEARED for now
-    ) =>
-      seq(
-        $.identifier,
-        choice(
-          seq("(", optional($.comma_sep_args), ")"),
-          $.comma_sep_args,
-          seq("(", optional($.comma_sep_args), ")", $.argument) // for closure as the last argument
-        )
-      ),
+    ) => seq($.identifier, $.function_arguments),
 
     variable_definition: (
       $ // CLEARED

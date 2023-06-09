@@ -11,6 +11,10 @@ keywords = [
   "def",
   "var",
   "task",
+  "true",
+  "false",
+  "null",
+  "final",
 ];
 
 types = ["String", "Integer", "Boolean", "Object"];
@@ -42,7 +46,7 @@ const PREC = {
   CLASS_LITERAL: 17, // .
 };
 
-const UNARY_EXPRESSION_OPERATORS = [
+const UNARY_OPERATORS = [
   ["+", PREC.UNARY],
   ["-", PREC.UNARY],
   ["!", PREC.UNARY],
@@ -50,13 +54,13 @@ const UNARY_EXPRESSION_OPERATORS = [
   ["*", PREC.UNARY],
 ];
 
-const BINARY_EXPRESSION_OPERATORS = [
+const BINARY_OPERATORS = [
   [">", PREC.REL],
   ["<", PREC.REL],
   [">=", PREC.REL],
   ["<=", PREC.REL],
   ["=~", PREC.REL],
-  ["->", PREC.REL], // TODO CHECK THE
+  ["->", PREC.REL], // TODO: CHECK THE
   ["==", PREC.EQUALITY],
   ["!=", PREC.EQUALITY],
   ["&&", PREC.AND],
@@ -74,7 +78,7 @@ const BINARY_EXPRESSION_OPERATORS = [
   [">>>", PREC.SHIFT],
 ];
 
-const ASSIGNMENT_EXPRESSION = [
+const ASSIGNMENT_OPERATORS = [
   "=",
   "+=",
   "-=",
@@ -109,69 +113,82 @@ const PRECEDENCES = [
 
 module.exports = grammar({
   name: "groovy",
-  extras: ($) => [$.shebang_line, $.line_comment, $.multiline_comment, /\s/],
 
-  precedences: ($) => [PRECEDENCES],
+  extras: ($) => [$.shebang_line, $.line_comment, $.multiline_comment, /\s/], // I think it's
+
+  precedences: ($) => [PRECEDENCES], // Can only be used with parse precedence, not lexical precedence.
+
+  supertypes: ($) => [$._definition, $.primary_expression, $._invocation],
 
   conflicts: ($) => [
-    [$.comma_sep_args],
-    [$.arguments],
-    [$.parentless_function_call, $.variable_definition],
-    [$.block_expression, $.parentless_function_call],
+    [$._comma_sep_args], // what does this single-element specify?
+    [$.property_access],
+    [$.if_statement],
+    [$.closure, $.body],
+    [$._comma_sep_args, $._expression],
+    [$.property_access, $._paren_less_function_call],
+    [$.closure, $.block_operations],
   ],
 
   rules: {
     module: ($) => repeat($._statement),
 
     _statement: ($) =>
-      seq(
-        choice(
-          $.import_statement,
-          $.if_statement,
-          $.assignment_expression,
-          $.block_expression,
-          $.task_definition,
-          $.function_call,
-          $.function_expression,
-          $.function_definition,
-          $.spread_expression,
-          $.return_statement,
-          $.throw_error_expression,
-          $.variable_definition,
-          $.parentless_function_call
-        ),
-        optional($.end_of_line)
+      choice(
+        $._expression,
+        $._definition,
+        $._invocation,
+        $._paren_less_function_call
       ),
 
-    _arguments: ($) =>
-      seq(
-        choice(
-          $.identifier,
-          $.field_access,
-          $.string,
-          $.function_call,
-          $.array,
-          $.method_definition,
-          $.new_expression,
-          $.number,
-          $.unary_expression,
-          $.binary_expression,
-          $.spread_expression,
-          $.ternary_expression,
-          $.elvis_expression,
-          $.closure,
-          $.closure_call,
-          $.text_block,
-          $.property_access,
-          $.as_expression
-        )
+    _invocation: ($) =>
+      choice(
+        $.import_statement,
+        $.if_statement,
+        $.return_statement,
+        $.throw_statement,
+        $.block_operations,
+        $.assignment_statement
       ),
 
-    arguments: ($) => choice($._arguments, seq("(", $._arguments, ")")),
+    _definition: ($) =>
+      choice($.function_definition, $.task_definition, $.variable_definition),
 
-    end_of_line: ($) => ";",
+    _nestable_expression: ($) =>
+      choice(
+        $.primary_expression,
+        $.unary_expression,
+        $.binary_expression,
+        $.ternary_expression,
+        $.new_expression,
+        $.as_expression,
+        // $.method_definition,
+        $.chain_expression,
+        $.array
+        // $.parenthesized_expression
+      ),
 
-    string: ($) => choice($.single_quoted_string, $.double_quoted_string),
+    _invocable_expression: ($) =>
+      choice($._normal_function_call, $._closure_last_function_call),
+
+    _expression: ($) => choice($._nestable_expression, $._invocable_expression),
+
+    primary_expression: ($) =>
+      choice(
+        // $.variable, // change with variable
+        $.number,
+        $.string,
+        $.true,
+        $.false,
+        $.null
+      ),
+
+    // parenthesized_expression: ($) => seq("(", $._expression, ")"),
+
+    chain: ($) => seq(repeat1(seq($.identifier, ".")), $.identifier), // only used in import_statement
+
+    import_statement: ($) =>
+      seq($.import, choice($.identifier, $.chain), optional(".*")),
 
     single_quoted_string: ($) =>
       token(seq("'", repeat(choice(/[^\\'\n]/, /\\(.|\n)/)), "'")),
@@ -179,14 +196,14 @@ module.exports = grammar({
       token(
         seq('"', repeat(choice(/[^\\"\n]/, /\\(.|\n)/, /\$\{[^}]*\}/)), '"')
       ),
-
     text_block: ($) =>
       token(
         seq("'''", /\s*\n/, optional(repeat(choice(/[^\\"]/, /\\(.)/))), "'''")
       ),
+    string: ($) =>
+      choice($.single_quoted_string, $.double_quoted_string, $.text_block),
 
-    array: ($) =>
-      choice(seq("[", optional($.comma_sep_args), optional(","), "]"), "[:]"),
+    array: ($) => choice(seq("[", optional($._comma_sep_args), "]"), "[:]"),
 
     number: ($) =>
       token(
@@ -196,171 +213,211 @@ module.exports = grammar({
         )
       ),
 
-    property_access: ($) => seq($.identifier, "[", $.body, "]"),
+    // EXAMPLE object[index1][index2]
+    property_access: ($) =>
+      seq($.variable, repeat1(seq("[", $.primary_expression, "]"))), // TODO: define key
 
-    field_access: ($) =>
+    _chain_item: ($) =>
+      choice(
+        $.identifier,
+        $.property_access,
+        $._normal_function_call,
+        $._closure_last_function_call
+      ),
+    chain_expression: ($) =>
       seq(
-        choice($.identifier, $.function_call),
+        choice($._chain_item, $.new_expression), //  new File(buildDir, "generated/source/codegen/jni/").absolutePath
         repeat1(
-          seq(
-            choice(".", "?.", ".&", "*."),
-            choice(
-              $.identifier,
-              $.function_call,
-              $.string,
-              seq($.identifier, "[", $.body, "]"),
-              $.closure_call
-            )
-          )
+          seq(choice(".", "?.", ".&", "*."), choice($._chain_item, $.string))
         )
       ),
 
-    import_statement: ($) =>
-      seq($.import, choice($.identifier, $.field_access), optional(".*")),
-
-    comma_sep_args: ($) => seq(commaSep($.arguments), optional(",")),
-
-    condition: ($) => seq("(", choice($.arguments), ")"),
-    body: ($) => repeat1($._statement),
-
-    if_clause: ($) =>
-      seq(
-        $.if,
-        $.condition,
-        choice(
-          seq("{", optional($.body), "}"),
-          $.return_statement,
-          $.assignment_expression,
-          $.field_access
-        )
+    _comma_sep_args: ($) =>
+      choice(
+        $._nestable_expression,
+        seq($._nestable_expression, repeat1(seq(",", $._nestable_expression)))
       ),
-    else_if_clause: ($) =>
-      seq($.else_if, $.condition, "{", optional($.body), "}"),
-    else_clause: ($) => seq($.else, "{", optional($.body), "}"),
-    if_statement: ($) =>
-      seq($.if_clause, repeat($.else_if_clause), optional($.else_clause)),
 
     closure: ($) =>
       seq(
         "{",
-        optional(
-          choice(
-            seq(optional($.def), choice($.identifier, $.field_access), "->"),
-            seq("->")
-          )
-        ),
-        choice($.body, $.string, $.elvis_expression),
+        optional(choice(seq($._comma_sep_args, "->"), seq("->"))),
+        repeat1($._statement), //
         "}"
       ),
-    closure_call: ($) => seq(choice($.identifier, $.function_call), $.closure),
 
-    function_call: ($) =>
-      seq($.identifier, "(", optional($.comma_sep_args), ")"),
-    parentless_function_call: ($) =>
-      seq($.identifier, optional($.comma_sep_args)),
-    function_expression: ($) =>
-      seq($.function_call, optional("<<"), "{", optional($.body), "}"),
+    _general_function_call: ($) =>
+      choice(
+        $._paren_less_function_call,
+        $._closure_last_function_call,
+        $._normal_function_call
+      ),
+    _paren_less_function_call: ($) =>
+      alias(
+        seq($.identifier, alias($._comma_sep_args, "arguments")),
+        "paren_function_call"
+      ), // if does not show in tree, define alias($._paren_less_function_call_args, "arguments") and use it
+
+    _closure_last_function_call: ($) =>
+      alias(
+        seq(
+          $.identifier,
+          alias($._closure_last_function_call_args, "arguments")
+        ),
+        "closure_function_call"
+      ),
+    _closure_last_function_call_args: ($) =>
+      choice(
+        seq(
+          "(",
+          optional($._normal_function_call_comma_sep_args),
+          ")",
+          $.closure
+        ),
+        $.closure
+      ),
+
+    _normal_function_call: ($) =>
+      alias(
+        seq($.identifier, alias($._normal_function_call_args, "arguments")),
+        "normal_function_call"
+      ),
+
+    _normal_function_call_comma_sep_args: ($) =>
+      choice(
+        choice($._expression, $.identifier),
+        seq(
+          choice($._expression, $.identifier),
+          repeat1(seq(",", choice($._expression, $.identifier)))
+        )
+      ),
+    _normal_function_call_args: ($) =>
+      seq("(", optional($._normal_function_call_comma_sep_args), ")"),
+
+    parameters: ($) => seq($._comma_sep_args),
+    function_definition_body: ($) => repeat1($._statement),
     function_definition: ($) =>
-      seq(optional("static"), $.def, $.function_expression),
+      // TODO: fix DOESN'T work with the new body
+      seq(
+        optional($.static),
+        $.def,
+        $.identifier,
+        "(",
+        optional($.parameters),
+        ")",
+        "{",
+        alias($.function_definition_body, "body"),
+        "}"
+      ),
 
     task_definition: ($) =>
-      seq($.task, choice($.block_expression, $.function_expression)),
+      seq(
+        $.task,
+        choice(
+          $.block_operations,
+          $._normal_function_call,
+          $._closure_last_function_call
+        )
+      ),
 
-    new_expression: ($) => seq($.new, choice($.function_call, $.field_access)),
+    new_expression: ($) =>
+      seq(
+        $.new,
+        choice(
+          $._normal_function_call,
+          $._closure_last_function_call
+          // $.chain_expression
+        )
+      ),
 
-    throw_error_expression: ($) => seq($.throw, $.new_expression),
+    throw_statement: ($) => seq($.throw, $.new_expression),
 
-    type: ($) => choice("String", "Integer", "Boolean", "Object"),
+    type: ($) => choice($.String, $.Integer, $.Boolean, $.Object), // CLEAERED
 
     variable_definition: ($) =>
-      seq(optional($.def), choice($.identifier, $.field_access)),
+      seq(optional($.final), choice($.def, $.var, $.type), $.identifier), //TODO add for multi
 
-    assignment_expression: ($) =>
-      seq($.variable_definition, choice(...ASSIGNMENT_EXPRESSION), $.assignee),
-    // assigned_to: ($) =>
-    //   seq(optional($.def), choice($.identifier, $.field_access)),
-    assignee: ($) => choice(seq("(", $.arguments, ")"), $.arguments),
+    assignment_statement: (
+      $ // TODO: multiple assignments at a time
+    ) =>
+      seq(
+        choice($.variable_definition, $.identifier, $.chain_expression),
+        choice(...ASSIGNMENT_OPERATORS),
+        $.assignee
+      ),
+    assignee: ($) => choice($._expression, $.identifier),
 
     unary_expression: ($) =>
       choice(
-        ...UNARY_EXPRESSION_OPERATORS.map(([operator, precedence]) =>
+        ...UNARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
-            seq(field("operator", operator), field("operand", $.arguments))
+            seq(field("operator", operator), field("operand", $._expression))
           )
         )
       ),
 
     binary_expression: ($) =>
       choice(
-        ...BINARY_EXPRESSION_OPERATORS.map(([operator, precedence]) =>
+        ...BINARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
             seq(
-              field("left", $.arguments),
+              field("left", $._expression),
               field("operator", operator),
-              field("right", $.arguments)
+              field("right", $._expression)
             )
           )
         )
       ),
 
-    ternary_variants: ($) =>
-      choice(
-        seq(
-          choice(
-            $.identifier,
-            $.field_access,
-            $.string,
-            $.function_call,
-            $.array,
-            $.new_expression,
-            $.ternary_expression,
-            $.closure
-          )
-        )
-      ),
-
     ternary_expression: ($) =>
-      prec.right(
+      prec.left(
         seq(
-          $.ternary_variants,
+          choice($._expression, $.identifier),
           "?",
-          $.ternary_variants,
+          $._expression,
           ":",
-          $.ternary_variants
+          $._expression
         )
       ),
-
-    elvis_expression: ($) =>
-      prec.right(seq($.ternary_variants, "?:", $.ternary_variants)),
+    elvis_expression: ($) => seq($._expression, "?:", $._expression),
 
     spread_expression: ($) => seq($.type, "...", $.identifier),
 
-    block_expression: ($) =>
-      prec(1, seq($.identifier, "{", optional($.body), "}")),
+    block_operations: ($) =>
+      seq($.identifier, seq("{", repeat1($._statement), "}")), // TODO: check with new  body (new body allows one invocation)
 
-    method_definition: ($) =>
-      seq(choice($.identifier, $.string), ":", choice($.arguments)),
+    // method_definition: ($) =>
+    //   seq(choice($.identifier, $.string), ":", choice($._expression)),
 
-    return_statement: ($) => prec.right(seq($.return, optional($.arguments))),
+    return_statement: ($) => prec.right(seq($.return, optional($._expression))),
 
-    as_expression: ($) => seq($.ternary_variants, $.as, $.identifier),
+    as_expression: ($) => seq($._expression, $.as, $.type),
+
+    condition: ($) => seq("(", $._expression, ")"), // TODO: operators?
+    body: ($) => choice(seq("{", repeat1($._statement), "}"), $._invocation),
+
+    if_clause: ($) => seq($.if, $.condition, $.body),
+    else_if_clause: ($) => seq($.else_if, $.condition, $.body),
+    else_clause: ($) => seq($.else, $.body),
+    if_statement: ($) =>
+      seq(
+        $.if_clause,
+        optional(repeat($.else_if_clause)),
+        optional($.else_clause)
+      ),
 
     ...ruleNames(...keywords),
     ...ruleNames(...types),
 
     identifier: (_) => /[A-Za-z_][A-Za-z0-9_]*/,
-
+    variable: ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
     shebang_line: ($) => token(seq(/#!.*/)),
     line_comment: (_) => token(seq("//", optional(/[^\n]+/g))),
     multiline_comment: (_) => token(seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")),
   },
 });
-
-function commaSep(rule) {
-  return seq(rule, repeat(seq(",", rule)));
-}
 
 function iregex(s) {
   return new RegExp(
