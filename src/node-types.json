@@ -106,6 +106,10 @@
           "named": true
         },
         {
+          "type": "method_definition",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
@@ -869,6 +873,53 @@
     }
   },
   {
+    "type": "method_definition",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "as_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "chain_expression",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "new_expression",
+          "named": true
+        },
+        {
+          "type": "primary_expression",
+          "named": true
+        },
+        {
+          "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "module",
     "named": true,
     "fields": {},
@@ -1075,7 +1126,11 @@
       "required": true,
       "types": [
         {
-          "type": "block_operations",
+          "type": "closure",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {

@@ -233,9 +233,12 @@ module.exports = grammar({
       ),
 
     _comma_sep_args: ($) =>
-      choice(
-        $._nestable_expression,
-        seq($._nestable_expression, repeat1(seq(",", $._nestable_expression)))
+      seq(
+        choice(
+          $._nestable_expression,
+          seq($._nestable_expression, repeat1(seq(",", $._nestable_expression)))
+        ),
+        optional(",")
       ),
 
     closure: ($) =>
@@ -310,14 +313,25 @@ module.exports = grammar({
         "}"
       ),
 
+    // https://docs.gradle.org/current/dsl/org.gradle.api.Task.html#org.gradle.api.Task
     task_definition: ($) =>
       seq(
         $.task,
+        $.identifier,
         choice(
-          $.block_operations,
-          $._normal_function_call,
-          $._closure_last_function_call
+          $.closure,
+          seq(
+            "(",
+            alias($._task_comma_sep_args, "arguments"),
+            ")",
+            optional($.closure)
+          )
         )
+      ),
+    _task_comma_sep_args: ($) =>
+      choice(
+        $.method_definition,
+        seq($.method_definition, repeat1(seq(",", $.method_definition)))
       ),
 
     new_expression: ($) =>
@@ -388,8 +402,12 @@ module.exports = grammar({
     block_operations: ($) =>
       seq($.identifier, seq("{", repeat1($._statement), "}")), // TODO: check with new  body (new body allows one invocation)
 
-    // method_definition: ($) =>
-    //   seq(choice($.identifier, $.string), ":", choice($._expression)),
+    method_definition: ($) =>
+      seq(
+        choice($.identifier, $.string),
+        ":",
+        choice($._nestable_expression, $.identifier)
+      ),
 
     return_statement: ($) => prec.right(seq($.return, optional($._expression))),
 
