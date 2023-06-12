@@ -124,9 +124,8 @@ module.exports = grammar({
     [$._comma_sep_args], // what does this single-element specify?
     [$.property_access],
     [$.if_statement],
-    [$.closure, $.body],
-    [$._comma_sep_args, $._expression],
-    [$.property_access, $._paren_less_function_call],
+    [$._comma_sep_args_items, $._expression],
+    [$._expression, $.method_definition],
     [$.closure, $.block_operations],
   ],
 
@@ -203,6 +202,20 @@ module.exports = grammar({
     string: ($) =>
       choice($.single_quoted_string, $.double_quoted_string, $.text_block),
 
+    _comma_sep_args_items: ($) =>
+      choice($._nestable_expression, $.identifier, $.method_definition),
+    _comma_sep_args: ($) =>
+      seq(
+        choice(
+          $._comma_sep_args_items,
+          seq(
+            $._comma_sep_args_items,
+            repeat1(seq(",", $._comma_sep_args_items))
+          )
+        ),
+        optional(",")
+      ),
+
     array: ($) => choice(seq("[", optional($._comma_sep_args), "]"), "[:]"),
 
     number: ($) =>
@@ -232,14 +245,17 @@ module.exports = grammar({
         )
       ),
 
-    _comma_sep_args: ($) =>
-      seq(
-        choice(
-          $._nestable_expression,
-          seq($._nestable_expression, repeat1(seq(",", $._nestable_expression)))
-        ),
-        optional(",")
-      ),
+    // _comma_sep_args: ($) =>
+    //   seq(
+    //     choice(
+    //       choice($._nestable_expression, $.identifier),
+    //       seq(
+    //         choice($._nestable_expression, $.identifier),
+    //         repeat1(seq(",", choice($._nestable_expression, $.identifier)))
+    //       )
+    //     ),
+    //     optional(",")
+    //   ),
 
     closure: ($) =>
       seq(
@@ -280,13 +296,18 @@ module.exports = grammar({
         "closure_function_call"
       ),
 
+    _normal_function_call_comma_sep_items: ($) =>
+      choice($._expression, $.identifier, $.method_definition, $.closure),
     _normal_function_call_comma_sep_args: ($) =>
-      choice(
-        choice($._expression, $.identifier),
-        seq(
-          choice($._expression, $.identifier),
-          repeat1(seq(",", choice($._expression, $.identifier)))
-        )
+      seq(
+        choice(
+          $._normal_function_call_comma_sep_items,
+          seq(
+            $._normal_function_call_comma_sep_items,
+            repeat1(seq(",", $._normal_function_call_comma_sep_items))
+          )
+        ),
+        optional(",")
       ),
     _normal_function_call_args: ($) =>
       seq("(", optional($._normal_function_call_comma_sep_args), ")"),

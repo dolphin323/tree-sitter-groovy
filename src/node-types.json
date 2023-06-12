@@ -153,6 +153,14 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "method_definition",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
@@ -673,6 +681,14 @@
           "named": true
         },
         {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "method_definition",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
@@ -1003,6 +1019,10 @@
           "named": true
         },
         {
+          "type": "method_definition",
+          "named": true
+        },
+        {
           "type": "new",
           "named": true
         },
@@ -1047,6 +1067,14 @@
         },
         {
           "type": "chain_expression",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "method_definition",
           "named": true
         },
         {
