@@ -261,14 +261,6 @@ module.exports = grammar({
         "paren_function_call"
       ), // if does not show in tree, define alias($._paren_less_function_call_args, "arguments") and use it
 
-    _closure_last_function_call: ($) =>
-      alias(
-        seq(
-          $.identifier,
-          alias($._closure_last_function_call_args, "arguments")
-        ),
-        "closure_function_call"
-      ),
     _closure_last_function_call_args: ($) =>
       choice(
         seq(
@@ -279,11 +271,13 @@ module.exports = grammar({
         ),
         $.closure
       ),
-
-    _normal_function_call: ($) =>
+    _closure_last_function_call: ($) =>
       alias(
-        seq($.identifier, alias($._normal_function_call_args, "arguments")),
-        "normal_function_call"
+        seq(
+          $.identifier,
+          alias($._closure_last_function_call_args, "arguments")
+        ),
+        "closure_function_call"
       ),
 
     _normal_function_call_comma_sep_args: ($) =>
@@ -296,6 +290,11 @@ module.exports = grammar({
       ),
     _normal_function_call_args: ($) =>
       seq("(", optional($._normal_function_call_comma_sep_args), ")"),
+    _normal_function_call: ($) =>
+      alias(
+        seq($.identifier, alias($._normal_function_call_args, "arguments")),
+        "normal_function_call"
+      ),
 
     parameters: ($) => seq($._comma_sep_args),
     function_definition_body: ($) => repeat1($._statement),
@@ -314,34 +313,29 @@ module.exports = grammar({
       ),
 
     // https://docs.gradle.org/current/dsl/org.gradle.api.Task.html#org.gradle.api.Task
-    task_definition: ($) =>
-      seq(
-        $.task,
-        $.identifier,
-        choice(
-          $.closure,
-          seq(
-            "(",
-            alias($._task_comma_sep_args, "arguments"),
-            ")",
-            optional($.closure)
-          )
-        )
-      ),
+    task_definition: ($) => seq($.task, $.identifier, $._task_body),
     _task_comma_sep_args: ($) =>
       choice(
         $.method_definition,
         seq($.method_definition, repeat1(seq(",", $.method_definition)))
       ),
+    _task_body: ($) =>
+      choice(
+        $.closure,
+        seq(
+          "(",
+          alias($._task_comma_sep_args, "arguments"),
+          ")",
+          optional($.closure)
+        )
+      ),
 
     new_expression: ($) =>
       seq(
         $.new,
-        choice(
-          $._normal_function_call,
-          $._closure_last_function_call
-          // $.chain_expression
-        )
+        $.identifier,
+        seq("(", optional($._normal_function_call_comma_sep_args), ")"),
+        optional($.closure)
       ),
 
     throw_statement: ($) => seq($.throw, $.new_expression),
