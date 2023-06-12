@@ -1,79 +1,5 @@
 [
   {
-    "type": "_definition",
-    "named": true,
-    "subtypes": [
-      {
-        "type": "function_definition",
-        "named": true
-      },
-      {
-        "type": "task_definition",
-        "named": true
-      },
-      {
-        "type": "variable_definition",
-        "named": true
-      }
-    ]
-  },
-  {
-    "type": "_invocation",
-    "named": true,
-    "subtypes": [
-      {
-        "type": "assignment_statement",
-        "named": true
-      },
-      {
-        "type": "block_operations",
-        "named": true
-      },
-      {
-        "type": "if_statement",
-        "named": true
-      },
-      {
-        "type": "import_statement",
-        "named": true
-      },
-      {
-        "type": "return_statement",
-        "named": true
-      },
-      {
-        "type": "throw_statement",
-        "named": true
-      }
-    ]
-  },
-  {
-    "type": "primary_expression",
-    "named": true,
-    "subtypes": [
-      {
-        "type": "false",
-        "named": true
-      },
-      {
-        "type": "null",
-        "named": true
-      },
-      {
-        "type": "number",
-        "named": true
-      },
-      {
-        "type": "string",
-        "named": true
-      },
-      {
-        "type": "true",
-        "named": true
-      }
-    ]
-  },
-  {
     "type": "arguments",
     "named": false,
     "fields": {},
@@ -102,11 +28,11 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "false",
           "named": true
         },
         {
-          "type": "method_definition",
+          "type": "identifier",
           "named": true
         },
         {
@@ -114,11 +40,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -153,11 +91,11 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "false",
           "named": true
         },
         {
-          "type": "method_definition",
+          "type": "identifier",
           "named": true
         },
         {
@@ -165,11 +103,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -208,15 +158,35 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -255,6 +225,10 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -263,11 +237,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -337,6 +323,14 @@
             "named": false
           },
           {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -345,11 +339,27 @@
             "named": false
           },
           {
-            "type": "primary_expression",
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "paren_function_call",
+            "named": false
+          },
+          {
+            "type": "string",
             "named": true
           },
           {
             "type": "ternary_expression",
+            "named": true
+          },
+          {
+            "type": "true",
             "named": true
           },
           {
@@ -477,6 +487,14 @@
             "named": false
           },
           {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -485,11 +503,27 @@
             "named": false
           },
           {
-            "type": "primary_expression",
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "paren_function_call",
+            "named": false
+          },
+          {
+            "type": "string",
             "named": true
           },
           {
             "type": "ternary_expression",
+            "named": true
+          },
+          {
+            "type": "true",
             "named": true
           },
           {
@@ -509,27 +543,15 @@
       "required": true,
       "types": [
         {
-          "type": "_definition",
+          "type": "assignment_statement",
           "named": true
         },
         {
-          "type": "_invocation",
+          "type": "block_operations",
           "named": true
         },
         {
-          "type": "array",
-          "named": true
-        },
-        {
-          "type": "as_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "chain_expression",
+          "type": "function_definition",
           "named": true
         },
         {
@@ -537,19 +559,35 @@
           "named": true
         },
         {
+          "type": "if_statement",
+          "named": true
+        },
+        {
+          "type": "import_statement",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "property_access",
           "named": true
         },
         {
-          "type": "ternary_expression",
+          "type": "return_statement",
           "named": true
         },
         {
-          "type": "unary_expression",
+          "type": "task_definition",
+          "named": true
+        },
+        {
+          "type": "throw_statement",
+          "named": true
+        },
+        {
+          "type": "variable_definition",
           "named": true
         }
       ]
@@ -564,27 +602,27 @@
       "required": false,
       "types": [
         {
-          "type": "_definition",
+          "type": "assignment_statement",
           "named": true
         },
         {
-          "type": "_invocation",
+          "type": "block_operations",
           "named": true
         },
         {
-          "type": "array",
+          "type": "function_definition",
           "named": true
         },
         {
-          "type": "as_expression",
+          "type": "identifier",
           "named": true
         },
         {
-          "type": "binary_expression",
+          "type": "if_statement",
           "named": true
         },
         {
-          "type": "chain_expression",
+          "type": "import_statement",
           "named": true
         },
         {
@@ -592,30 +630,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "property_access",
           "named": true
         },
         {
-          "type": "ternary_expression",
+          "type": "return_statement",
           "named": true
         },
         {
-          "type": "unary_expression",
+          "type": "task_definition",
           "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "chain",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
+        },
         {
-          "type": "identifier",
+          "type": "throw_statement",
+          "named": true
+        },
+        {
+          "type": "variable_definition",
           "named": true
         }
       ]
@@ -657,14 +688,6 @@
       "required": false,
       "types": [
         {
-          "type": "_definition",
-          "named": true
-        },
-        {
-          "type": "_invocation",
-          "named": true
-        },
-        {
           "type": "array",
           "named": true
         },
@@ -673,7 +696,15 @@
           "named": true
         },
         {
+          "type": "assignment_statement",
+          "named": true
+        },
+        {
           "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "block_operations",
           "named": true
         },
         {
@@ -681,11 +712,23 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
+          "type": "function_definition",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
         {
-          "type": "method_definition",
+          "type": "if_statement",
+          "named": true
+        },
+        {
+          "type": "import_statement",
           "named": true
         },
         {
@@ -693,7 +736,27 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "property_access",
+          "named": true
+        },
+        {
+          "type": "return_statement",
+          "named": true
+        },
+        {
+          "type": "string",
+          "named": true
+        },
+        {
+          "type": "task_definition",
           "named": true
         },
         {
@@ -701,7 +764,19 @@
           "named": true
         },
         {
+          "type": "throw_statement",
+          "named": true
+        },
+        {
+          "type": "true",
+          "named": true
+        },
+        {
           "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "variable_definition",
           "named": true
         }
       ]
@@ -732,15 +807,35 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -874,62 +969,11 @@
       "required": true,
       "types": [
         {
-          "type": "chain",
-          "named": true
-        },
-        {
           "type": "identifier",
           "named": true
         },
         {
           "type": "import",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "method_definition",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "array",
-          "named": true
-        },
-        {
-          "type": "as_expression",
-          "named": true
-        },
-        {
-          "type": "binary_expression",
-          "named": true
-        },
-        {
-          "type": "chain_expression",
-          "named": true
-        },
-        {
-          "type": "identifier",
-          "named": true
-        },
-        {
-          "type": "new_expression",
-          "named": true
-        },
-        {
-          "type": "primary_expression",
-          "named": true
-        },
-        {
-          "type": "ternary_expression",
-          "named": true
-        },
-        {
-          "type": "unary_expression",
           "named": true
         }
       ]
@@ -944,27 +988,27 @@
       "required": false,
       "types": [
         {
-          "type": "_definition",
+          "type": "assignment_statement",
           "named": true
         },
         {
-          "type": "_invocation",
+          "type": "block_operations",
           "named": true
         },
         {
-          "type": "array",
+          "type": "function_definition",
           "named": true
         },
         {
-          "type": "as_expression",
+          "type": "identifier",
           "named": true
         },
         {
-          "type": "binary_expression",
+          "type": "if_statement",
           "named": true
         },
         {
-          "type": "chain_expression",
+          "type": "import_statement",
           "named": true
         },
         {
@@ -972,15 +1016,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "property_access",
           "named": true
         },
         {
-          "type": "ternary_expression",
+          "type": "return_statement",
           "named": true
         },
         {
-          "type": "unary_expression",
+          "type": "task_definition",
+          "named": true
+        },
+        {
+          "type": "throw_statement",
+          "named": true
+        },
+        {
+          "type": "variable_definition",
           "named": true
         }
       ]
@@ -1015,11 +1067,11 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "false",
           "named": true
         },
         {
-          "type": "method_definition",
+          "type": "identifier",
           "named": true
         },
         {
@@ -1031,11 +1083,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -1070,11 +1134,11 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "false",
           "named": true
         },
         {
-          "type": "method_definition",
+          "type": "identifier",
           "named": true
         },
         {
@@ -1082,11 +1146,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -1105,7 +1181,7 @@
       "required": true,
       "types": [
         {
-          "type": "primary_expression",
+          "type": "identifier",
           "named": true
         },
         {
@@ -1140,11 +1216,23 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
           "type": "new_expression",
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
           "named": true
         },
         {
@@ -1152,7 +1240,15 @@
           "named": true
         },
         {
+          "type": "string",
+          "named": true
+        },
+        {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -1233,6 +1329,10 @@
           "named": true
         },
         {
+          "type": "false",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
@@ -1241,11 +1341,23 @@
           "named": true
         },
         {
-          "type": "primary_expression",
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number",
+          "named": true
+        },
+        {
+          "type": "string",
           "named": true
         },
         {
           "type": "ternary_expression",
+          "named": true
+        },
+        {
+          "type": "true",
           "named": true
         },
         {
@@ -1334,6 +1446,14 @@
             "named": false
           },
           {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -1342,11 +1462,27 @@
             "named": false
           },
           {
-            "type": "primary_expression",
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "number",
+            "named": true
+          },
+          {
+            "type": "paren_function_call",
+            "named": false
+          },
+          {
+            "type": "string",
             "named": true
           },
           {
             "type": "ternary_expression",
+            "named": true
+          },
+          {
+            "type": "true",
             "named": true
           },
           {
@@ -1455,10 +1591,6 @@
     "named": false
   },
   {
-    "type": "*.",
-    "named": false
-  },
-  {
     "type": "*=",
     "named": false
   },
@@ -1488,10 +1620,6 @@
   },
   {
     "type": ".",
-    "named": false
-  },
-  {
-    "type": ".&",
     "named": false
   },
   {
@@ -1568,10 +1696,6 @@
   },
   {
     "type": "?",
-    "named": false
-  },
-  {
-    "type": "?.",
     "named": false
   },
   {

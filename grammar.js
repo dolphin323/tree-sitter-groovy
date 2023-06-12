@@ -1,3 +1,5 @@
+const { string } = require("mathjs");
+
 keywords = [
   "if",
   "else if",
@@ -118,27 +120,25 @@ module.exports = grammar({
 
   precedences: ($) => [PRECEDENCES], // Can only be used with parse precedence, not lexical precedence.
 
-  supertypes: ($) => [$._definition, $.primary_expression, $._invocation],
-
   conflicts: ($) => [
     [$._comma_sep_args], // what does this single-element specify?
     [$.property_access],
     [$.if_statement],
     [$._comma_sep_args_items, $._expression],
-    [$._expression, $.method_definition],
+    [$._key_value, $._expression],
+    [$.ternary_expression, $._key_value],
+    [$.as_expression, $._key_value],
     [$.closure, $.block_operations],
+    [$.function_definition, $.variable_definition],
+    [$._paren_less_function_call, $.identifier],
+    [$._paren_less_function_call, $._primary_expression],
+    [$._primary_expression, $._key_value],
   ],
 
   rules: {
     module: ($) => repeat($._statement),
 
-    _statement: ($) =>
-      choice(
-        $._expression,
-        $._definition,
-        $._invocation,
-        $._paren_less_function_call
-      ),
+    _statement: ($) => choice($._invocation, $._definition),
 
     _invocation: ($) =>
       choice(
@@ -147,34 +147,38 @@ module.exports = grammar({
         $.return_statement,
         $.throw_statement,
         $.block_operations,
-        $.assignment_statement
+        $.assignment_statement,
+        $._general_function_call,
+        $._chained_function_call
       ),
 
     _definition: ($) =>
       choice($.function_definition, $.task_definition, $.variable_definition),
 
-    _nestable_expression: ($) =>
+    _nestable_expression: (
+      $ // Not usable as an statement
+    ) =>
       choice(
-        $.primary_expression,
+        $._primary_expression,
         $.unary_expression,
         $.binary_expression,
         $.ternary_expression,
         $.new_expression,
         $.as_expression,
-        // $.method_definition,
+        // $._key_value,
         $.chain_expression,
         $.array
+        // $._paren_expression,
         // $.parenthesized_expression
       ),
 
-    _invocable_expression: ($) =>
-      choice($._normal_function_call, $._closure_last_function_call),
+    // _paren_expression: ($) => seq("(", $._expression, ")"),
+    _expression: ($) =>
+      choice($._nestable_expression, $._general_function_call),
 
-    _expression: ($) => choice($._nestable_expression, $._invocable_expression),
-
-    primary_expression: ($) =>
+    _primary_expression: ($) =>
       choice(
-        // $.variable, // change with variable
+        $.identifier, // change with variable
         $.number,
         $.string,
         $.true,
@@ -184,10 +188,9 @@ module.exports = grammar({
 
     // parenthesized_expression: ($) => seq("(", $._expression, ")"),
 
-    chain: ($) => seq(repeat1(seq($.identifier, ".")), $.identifier), // only used in import_statement
-
+    _import_chain: ($) => seq(repeat1(seq($.identifier, ".")), $.identifier), // only used in import_statement
     import_statement: ($) =>
-      seq($.import, choice($.identifier, $.chain), optional(".*")),
+      seq($.import, choice($.identifier, $._import_chain), optional(".*")),
 
     single_quoted_string: ($) =>
       token(seq("'", repeat(choice(/[^\\'\n]/, /\\(.|\n)/)), "'")),
@@ -202,8 +205,7 @@ module.exports = grammar({
     string: ($) =>
       choice($.single_quoted_string, $.double_quoted_string, $.text_block),
 
-    _comma_sep_args_items: ($) =>
-      choice($._nestable_expression, $.identifier, $.method_definition),
+    _comma_sep_args_items: ($) => choice($._nestable_expression, $._key_value),
     _comma_sep_args: ($) =>
       seq(
         choice(
@@ -228,34 +230,18 @@ module.exports = grammar({
 
     // EXAMPLE object[index1][index2]
     property_access: ($) =>
-      seq($.variable, repeat1(seq("[", $.primary_expression, "]"))), // TODO: define key
+      seq($.variable, repeat1(seq("[", $.identifier, "]"))), // TODO: define key
 
     _chain_item: ($) =>
       choice(
         $.identifier,
         $.property_access,
         $._normal_function_call,
-        $._closure_last_function_call
+        $._closure_last_function_call,
+        $.new_expression
       ),
     chain_expression: ($) =>
-      seq(
-        choice($._chain_item, $.new_expression), //  new File(buildDir, "generated/source/codegen/jni/").absolutePath
-        repeat1(
-          seq(choice(".", "?.", ".&", "*."), choice($._chain_item, $.string))
-        )
-      ),
-
-    // _comma_sep_args: ($) =>
-    //   seq(
-    //     choice(
-    //       choice($._nestable_expression, $.identifier),
-    //       seq(
-    //         choice($._nestable_expression, $.identifier),
-    //         repeat1(seq(",", choice($._nestable_expression, $.identifier)))
-    //       )
-    //     ),
-    //     optional(",")
-    //   ),
+      choice($._chained_field_access, $._chained_function_call),
 
     closure: ($) =>
       seq(
@@ -297,7 +283,7 @@ module.exports = grammar({
       ),
 
     _normal_function_call_comma_sep_items: ($) =>
-      choice($._expression, $.identifier, $.method_definition, $.closure),
+      choice($._expression, $._key_value, $.closure),
     _normal_function_call_comma_sep_args: ($) =>
       seq(
         choice(
@@ -336,10 +322,7 @@ module.exports = grammar({
     // https://docs.gradle.org/current/dsl/org.gradle.api.Task.html#org.gradle.api.Task
     task_definition: ($) => seq($.task, $.identifier, $._task_body),
     _task_comma_sep_args: ($) =>
-      choice(
-        $.method_definition,
-        seq($.method_definition, repeat1(seq(",", $.method_definition)))
-      ),
+      choice($._key_value, seq($._key_value, repeat1(seq(",", $._key_value)))),
     _task_body: ($) =>
       choice(
         $.closure,
@@ -374,14 +357,17 @@ module.exports = grammar({
         choice(...ASSIGNMENT_OPERATORS),
         $.assignee
       ),
-    assignee: ($) => choice($._expression, $.identifier),
+    assignee: ($) => seq($._expression),
 
     unary_expression: ($) =>
       choice(
         ...UNARY_OPERATORS.map(([operator, precedence]) =>
           prec.left(
             precedence,
-            seq(field("operator", operator), field("operand", $._expression))
+            seq(
+              field("operator", operator),
+              field("operand", choice($._expression, $.identifier))
+            )
           )
         )
       ),
@@ -401,15 +387,7 @@ module.exports = grammar({
       ),
 
     ternary_expression: ($) =>
-      prec.left(
-        seq(
-          choice($._expression, $.identifier),
-          "?",
-          $._expression,
-          ":",
-          $._expression
-        )
-      ),
+      prec.left(seq($._expression, "?", $._expression, ":", $._expression)),
     elvis_expression: ($) => seq($._expression, "?:", $._expression),
 
     spread_expression: ($) => seq($.type, "...", $.identifier),
@@ -417,12 +395,16 @@ module.exports = grammar({
     block_operations: ($) =>
       seq($.identifier, seq("{", repeat1($._statement), "}")), // TODO: check with new  body (new body allows one invocation)
 
-    method_definition: ($) =>
+    _key_value: ($) =>
+      seq(choice($.identifier, $.string), ":", choice($._expression)),
+
+    _chained_function_call: ($) =>
       seq(
-        choice($.identifier, $.string),
-        ":",
-        choice($._nestable_expression, $.identifier)
+        repeat1(seq($._chain_item, ".")),
+        choice($._normal_function_call, $._closure_last_function_call)
       ),
+    _chained_field_access: ($) =>
+      seq(repeat1(seq($._chain_item, ".")), choice($.identifier, $.string)),
 
     return_statement: ($) => prec.right(seq($.return, optional($._expression))),
 
